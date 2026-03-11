@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SIGNAL // InfoFeed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --bg2: #111114;
+    --bg3: #18181d;
+    --border: #2a2a35;
+    --accent-yt: #ff3c3c;
+    --accent-x: #1d9bf0;
+    --accent-green: #00ff88;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-display: 'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* scanline overlay */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ── HEADER ── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0;
+    background: rgba(10,10,12,0.95);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.1rem;
+    letter-spacing: 0.15em;
+    color: var(--accent-green);
+    text-transform: uppercase;
+  }
+  .logo span { color: var(--muted); font-weight: 400; }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+  }
+  .dot-ok { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); }
+  .dot-warn { background: #ffaa00; box-shadow: 0 0 6px #ffaa00; }
+  .dot-err { background: var(--accent-yt); box-shadow: 0 0 6px var(--accent-yt); }
+
+  .status-text { font-size: 0.7rem; color: var(--muted); }
+
+  /* ── TOOLBAR ── */
+  .toolbar {
+    padding: 1rem 2rem;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+  }
+
+  .filter-group { display: flex; gap: 0.4rem; }
+
+  .btn {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    padding: 0.4rem 0.9rem;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    transition: all 0.15s;
+    border-radius: 2px;
+  }
+  .btn:hover { color: var(--text); border-color: var(--text); }
+  .btn.active-all { border-color: var(--accent-green); color: var(--accent-green); background: rgba(0,255,136,0.06); }
+  .btn.active-yt  { border-color: var(--accent-yt);    color: var(--accent-yt);    background: rgba(255,60,60,0.06); }
+  .btn.active-x   { border-color: var(--accent-x);     color: var(--accent-x);     background: rgba(29,155,240,0.06); }
+
+  .search-wrap {
+    flex: 1;
+    min-width: 200px;
+    max-width: 400px;
+    position: relative;
+  }
+  .search-wrap::before {
+    content: '//';
+    position: absolute;
+    left: 10px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 0.75rem;
+  }
+  input[type=search] {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    padding: 0.4rem 0.8rem 0.4rem 2rem;
+    border-radius: 2px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input[type=search]:focus { border-color: var(--accent-green); }
+  input[type=search]::placeholder { color: var(--muted); }
+
+  .sort-select {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .btn-refresh {
+    margin-left: auto;
+    background: rgba(0,255,136,0.08);
+    border-color: rgba(0,255,136,0.3);
+    color: var(--accent-green);
+  }
+  .btn-refresh:hover { background: rgba(0,255,136,0.15); border-color: var(--accent-green); }
+  .btn-refresh.loading { opacity: 0.5; pointer-events: none; }
+
+  /* ── SETUP BANNER ── */
+  .setup-banner {
+    margin: 1.5rem 2rem;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .setup-banner-title {
+    padding: 0.75rem 1.2rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .setup-steps { padding: 1rem 1.2rem; display: flex; flex-direction: column; gap: 0.8rem; }
+  .setup-step {
+    display: flex; align-items: flex-start; gap: 1rem;
+    font-size: 0.78rem; line-height: 1.5;
+  }
+  .step-num {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    width: 22px; height: 22px;
+    border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.65rem; color: var(--muted);
+    flex-shrink: 0;
+  }
+  .step-num.done { border-color: var(--accent-green); color: var(--accent-green); }
+  .setup-step a { color: var(--accent-x); text-decoration: none; }
+  .setup-step a:hover { text-decoration: underline; }
+  .btn-auth {
+    display: inline-block;
+    margin-top: 0.3rem;
+    padding: 0.35rem 0.9rem;
+    background: rgba(255,60,60,0.1);
+    border: 1px solid var(--accent-yt);
+    color: var(--accent-yt);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-auth:hover { background: rgba(255,60,60,0.2); }
+
+  /* ── COUNT BAR ── */
+  .count-bar {
+    padding: 0.5rem 2rem;
+    font-size: 0.68rem;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    display: flex; gap: 1.5rem;
+  }
+  .count-bar span { color: var(--text); }
+
+  /* ── GRID ── */
+  #feed {
+    padding: 1.5rem 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1px;
+    background: var(--border);
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--bg);
+    cursor: pointer;
+    transition: background 0.12s;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: fadeIn 0.25s ease both;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .card:hover { background: var(--bg2); }
+  .card:hover .card-title { color: var(--accent-green); }
+
+  .card-platform-bar {
+    height: 2px;
+    width: 100%;
+  }
+  .card.yt .card-platform-bar { background: var(--accent-yt); }
+  .card.x  .card-platform-bar { background: var(--accent-x); }
+
+  .card-thumb {
+    width: 100%;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    display: block;
+    filter: saturate(0.8);
+    transition: filter 0.15s;
+  }
+  .card:hover .card-thumb { filter: saturate(1); }
+
+  .card-body { padding: 0.9rem 1rem 1rem; flex: 1; display: flex; flex-direction: column; gap: 0.5rem; }
+
+  .card-meta {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.65rem; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .card-meta .avatar {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--border);
+  }
+  .card-meta .platform-tag {
+    padding: 1px 6px;
+    border-radius: 2px;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+  }
+  .card.yt .platform-tag { background: rgba(255,60,60,0.12); color: var(--accent-yt); }
+  .card.x  .platform-tag { background: rgba(29,155,240,0.12); color: var(--accent-x); }
+
+  .card-title {
+    font-family: var(--font-display);
+    font-size: 0.88rem;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--text);
+    transition: color 0.12s;
+  }
+
+  .card-desc {
+    font-size: 0.7rem;
+    color: var(--muted);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .card-date {
+    font-size: 0.63rem;
+    color: var(--muted);
+    margin-top: auto;
+    padding-top: 0.4rem;
+    border-top: 1px solid var(--border);
+  }
+
+  /* X card — no image */
+  .card.x .card-body { padding-top: 1rem; }
+
+  .tweet-text {
+    font-size: 0.8rem;
+    line-height: 1.55;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* ── EMPTY / LOADING ── */
+  .state-msg {
+    grid-column: 1/-1;
+    padding: 4rem 2rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+  .state-msg .big { font-size: 2rem; margin-bottom: 1rem; opacity: 0.3; }
+  .spinner {
+    display: inline-block;
+    width: 20px; height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent-green);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 0.5rem;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    #feed { grid-template-columns: 1fr; }
+    .toolbar { padding: 0.8rem 1rem; }
+    header { padding: 0 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">SIGNAL <span>// infofeed</span></div>
+  <div class="header-right" id="status-bar">
+    <span class="status-text">checking...</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="filter-group">
+    <button class="btn active-all" onclick="setFilter('all', this)">All</button>
+    <button class="btn" onclick="setFilter('youtube', this)">YouTube</button>
+    <button class="btn" onclick="setFilter('x', this)">X</button>
+  </div>
+  <div class="search-wrap">
+    <input type="search" id="search" placeholder="search title, channel, handle..." oninput="renderFeed()">
+  </div>
+  <select class="sort-select" id="sort" onchange="renderFeed()">
+    <option value="date_desc">Newest first</option>
+    <option value="date_asc">Oldest first</option>
+    <option value="platform">By platform</option>
+    <option value="author">By author</option>
+  </select>
+  <button class="btn btn-refresh" id="refresh-btn" onclick="loadFeed()">↻ Refresh</button>
+</div>
+
+<div class="count-bar" id="count-bar" style="display:none">
+  <div>Total: <span id="cnt-total">0</span></div>
+  <div>YouTube: <span id="cnt-yt">0</span></div>
+  <div>X: <span id="cnt-x">0</span></div>
+</div>
+
+<!-- Setup instructions (shown when not configured) -->
+<div class="setup-banner" id="setup-banner" style="display:none">
+  <div class="setup-banner-title">⚙ setup required</div>
+  <div class="setup-steps">
+    <div class="setup-step" id="step-secret">
+      <div class="step-num" id="step-secret-num">1</div>
+      <div>
+        <strong>client_secret.json</strong> — Download your OAuth credentials from
+        <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a>
+        (APIs &amp; Services → Credentials → Create OAuth 2.0 Client ID, type: Web application,
+        redirect URI: <code>http://localhost:8000/auth/youtube/callback</code>).
+        Save as <code>client_secret.json</code> in the app folder.
+      </div>
+    </div>
+    <div class="setup-step" id="step-auth">
+      <div class="step-num" id="step-auth-num">2</div>
+      <div>
+        <strong>Authorize YouTube</strong> — Connect your Google account to read subscriptions.<br>
+        <a class="btn-auth" href="/auth/youtube">Connect YouTube →</a>
+      </div>
+    </div>
+    <div class="setup-step" id="step-x">
+      <div class="step-num" id="step-x-num">3</div>
+      <div>
+        <strong>following.txt</strong> — Export your X following list:
+        X Settings → Your account → Download an archive → extract <code>data/following.js</code>,
+        or just paste one handle per line into <code>following.txt</code> in the app folder.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="feed">
+  <div class="state-msg"><div class="big">📡</div>Loading feed...</div>
+</div>
+
+<script>
+let allItems = [];
+let currentFilter = 'all';
+
+// ── Status bar ────────────────────────────────────────────────────────────────
+async function checkStatus() {
+  const r = await fetch('/api/status');
+  const s = await r.json();
+
+  const bar = document.getElementById('status-bar');
+  const parts = [];
+  if (s.yt_authenticated) {
+    parts.push(`<span class="status-dot dot-ok"></span><span class="status-text">YT ✓</span>`);
+  } else {
+    parts.push(`<span class="status-dot dot-warn"></span><span class="status-text">YT auth needed</span>`);
+  }
+  if (s.x_handles > 0) {
+    parts.push(`<span class="status-dot dot-ok"></span><span class="status-text">X (${s.x_handles})</span>`);
+  } else {
+    parts.push(`<span class="status-dot dot-warn"></span><span class="status-text">X: no handles</span>`);
+  }
+  bar.innerHTML = parts.join('');
+
+  // setup banner logic
+  const banner = document.getElementById('setup-banner');
+  const needsSetup = !s.has_client_secret || !s.yt_authenticated || s.x_handles === 0;
+  banner.style.display = needsSetup ? 'block' : 'none';
+
+  if (s.has_client_secret) document.getElementById('step-secret-num').classList.add('done');
+  if (s.yt_authenticated) document.getElementById('step-auth-num').classList.add('done');
+  if (s.x_handles > 0)   document.getElementById('step-x-num').classList.add('done');
+}
+
+// ── Feed loading ──────────────────────────────────────────────────────────────
+async function loadFeed() {
+  const btn = document.getElementById('refresh-btn');
+  btn.classList.add('loading');
+  btn.textContent = '↻ Loading...';
+  document.getElementById('feed').innerHTML = `<div class="state-msg"><span class="spinner"></span> Fetching feed...</div>`;
+
+  try {
+    const r = await fetch(`/api/feed?platform=${currentFilter === 'all' ? 'all' : currentFilter}`);
+    const data = await r.json();
+    allItems = [...(data.youtube?.items || []), ...(data.x?.items || [])];
+    renderFeed();
+  } catch(e) {
+    document.getElementById('feed').innerHTML = `<div class="state-msg">Error loading feed. Is the server running?</div>`;
+  } finally {
+    btn.classList.remove('loading');
+    btn.textContent = '↻ Refresh';
+  }
+}
+
+// ── Filter & sort ─────────────────────────────────────────────────────────────
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-group .btn').forEach(b => {
+    b.className = 'btn';
+  });
+  el.classList.add(`active-${f}`);
+  loadFeed();
+}
+
+function renderFeed() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const sort = document.getElementById('sort').value;
+
+  let items = allItems.filter(item => {
+    if (currentFilter !== 'all' && item.platform !== currentFilter) return false;
+    if (!q) return true;
+    const searchable = [item.title, item.channel, item.handle, item.description].join(' ').toLowerCase();
+    return searchable.includes(q);
+  });
+
+  items.sort((a, b) => {
+    if (sort === 'date_desc') return (b.published || '') > (a.published || '') ? 1 : -1;
+    if (sort === 'date_asc')  return (a.published || '') > (b.published || '') ? 1 : -1;
+    if (sort === 'platform')  return a.platform.localeCompare(b.platform);
+    if (sort === 'author') {
+      const aa = (a.channel || a.handle || '').toLowerCase();
+      const bb = (b.channel || b.handle || '').toLowerCase();
+      return aa.localeCompare(bb);
+    }
+    return 0;
+  });
+
+  // count bar
+  const ytCount = items.filter(i => i.platform === 'youtube').length;
+  const xCount  = items.filter(i => i.platform === 'x').length;
+  document.getElementById('cnt-total').textContent = items.length;
+  document.getElementById('cnt-yt').textContent = ytCount;
+  document.getElementById('cnt-x').textContent = xCount;
+  document.getElementById('count-bar').style.display = items.length ? 'flex' : 'none';
+
+  const feed = document.getElementById('feed');
+  if (!items.length) {
+    feed.innerHTML = `<div class="state-msg"><div class="big">⚡</div>No items found.</div>`;
+    return;
+  }
+
+  feed.innerHTML = items.map((item, i) => renderCard(item, i)).join('');
+}
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  } catch { return iso; }
+}
+
+function renderCard(item, i) {
+  const delay = Math.min(i * 20, 400);
+  if (item.platform === 'youtube') {
+    return `
+    <div class="card yt" onclick="openItem('${escHtml(item.url)}')" style="animation-delay:${delay}ms">
+      <div class="card-platform-bar"></div>
+      ${item.thumbnail ? `<img class="card-thumb" src="${escHtml(item.thumbnail)}" loading="lazy" alt="">` : ''}
+      <div class="card-body">
+        <div class="card-meta">
+          ${item.channel_thumb ? `<img class="avatar" src="${escHtml(item.channel_thumb)}" alt="">` : ''}
+          <span class="platform-tag">YT</span>
+          <span>${escHtml(item.channel || '')}</span>
+        </div>
+        <div class="card-title">${escHtml(item.title)}</div>
+        ${item.description ? `<div class="card-desc">${escHtml(item.description)}</div>` : ''}
+        <div class="card-date">${fmtDate(item.published)}</div>
+      </div>
+    </div>`;
+  } else {
+    return `
+    <div class="card x" onclick="openItem('${escHtml(item.url)}')" style="animation-delay:${delay}ms">
+      <div class="card-platform-bar"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          ${item.avatar ? `<img class="avatar" src="${escHtml(item.avatar)}" alt="">` : ''}
+          <span class="platform-tag">X</span>
+          <span>@${escHtml(item.handle || '')}</span>
+        </div>
+        <div class="tweet-text">${escHtml(item.description || item.title)}</div>
+        <div class="card-date">${fmtDate(item.published)}</div>
+      </div>
+    </div>`;
+  }
+}
+
+async function openItem(url) {
+  await fetch(`/api/open?url=${encodeURIComponent(url)}`);
+}
+
+function escHtml(s) {
+  return String(s || '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+checkStatus();
+loadFeed();
+</script>
+</body>
+</html>
