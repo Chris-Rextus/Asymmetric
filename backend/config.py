@@ -23,6 +23,7 @@ load_dotenv(ENV_FILE)
 YOUTUBE_SCOPES = ["https://www.googleapis.com/auth/youtube.readonly"]
 YOUTUBE_MAX_SUBSCRIPTIONS = int(os.getenv("YOUTUBE_MAX_SUBSCRIPTIONS", "50"))
 YOUTUBE_MAX_VIDEOS_PER_CHANNEL = int(os.getenv("YOUTUBE_MAX_VIDEOS_PER_CHANNEL", "5"))
+CACHE_TTL_MINUTES = int(os.getenv("CACHE_TTL_MINUTES", "30"))
 
 # ── Nitter ────────────────────────────────────────────────────────────────────
 
