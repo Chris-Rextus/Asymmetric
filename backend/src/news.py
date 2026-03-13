@@ -16,9 +16,13 @@ from config import (
     NEWS_CACHE_TTL_MINUTES,
     NEWS_MAX_ITEMS_PER_SOURCE,
     NEWS_SOURCES,
+    NEWS_SOURCES_TECH,
+    NEWS_SOURCES_GENERAL,
 )
 
-CACHE_FILE = DATA_DIR / "news_cache.json"
+CACHE_FILE         = DATA_DIR / "news_cache.json"
+CACHE_FILE_TECH    = DATA_DIR / "news_cache_tech.json"
+CACHE_FILE_GENERAL = DATA_DIR / "news_cache_general.json"
 
 HEADERS = {
     "User-Agent":      "Mozilla/5.0 (X11; Linux x86_64; rv:124.0) Gecko/20100101 Firefox/124.0",
@@ -54,12 +58,25 @@ TOPICS: dict[str, list[str]] = {
     "mobile":          ["android", "ios", "iphone", "mobile security", "app store", "google play", "mobile malware"],
     "supply_chain":    ["supply chain", "solarwinds", "dependency", "npm package", "pypi", "open source", "third-party"],
     "regulation":      ["regulation", "compliance", "sec", "ftc", "gdpr", "nist", "executive order", "legislation", "law"],
+    "sanctions":     ["sanctions", "export control", "ofac", "embargo", "blacklist"],
+    "central_banks": ["federal reserve", "fed rate", "ecb", "interest rate", "monetary policy", "quantitative", "jerome powell", "lagarde"],
+    "elections":     ["election", "vote", "ballot", "poll", "democrat", "republican", "congress", "parliament", "candidate"],
+    "war":           ["war", "conflict", "military", "troops", "missile", "drone strike", "invasion", "nato", "ukraine", "gaza"],
+    "trade":         ["tariff", "trade war", "import", "export", "wto", "supply chain", "manufacturing", "reshoring"],
+    "inflation":     ["inflation", "cpi", "deflation", "interest rate", "recession", "gdp", "unemployment", "stagflation"],
+    "energy":        ["oil", "gas", "opec", "energy", "pipeline", "lng", "nuclear", "solar", "renewable", "grid"],
+    "usa":           ["united states", "washington", "white house", "pentagon", "congress", "senate", "biden", "trump", "cia", "nsa", "doj", "state department", "american"],
+    "china":         ["china", "beijing", "xi jinping", "pla", "ccp", "chinese", "taiwan strait", "hong kong", "bri", "belt and road", "huawei", "tiktok", "prc"],
+    "russia":        ["russia", "moscow", "putin", "kremlin", "fsb", "svr", "gru", "russian", "wagner", "ukraine war", "nato expansion", "gazprom"],
+    "europe":        ["european union", "eu ", "brussels", "nato", "germany", "france", "uk", "britain", "macron", "scholz", "european parliament"],
+    "middleeast":    ["israel", "iran", "saudi arabia", "gaza", "hamas", "hezbollah", "houthi", "irgc", "mossad", "riyadh", "tehran", "opec"],
+    "nuclear":       ["nuclear", "icbm", "warhead", "nonproliferation", "iaea", "enrichment", "deterrence", "new start", "hypersonic"],
 }
 
 # ── Source weights ────────────────────────────────────────────────────────────
 
 SOURCE_WEIGHTS: dict[str, float] = {
-    # primary infosec — highest signal
+    # infosec — high signal
     "krebs":            2.0,
     "bleepingcomputer": 1.9,
     "thehackernews":    1.7,
@@ -78,7 +95,7 @@ SOURCE_WEIGHTS: dict[str, float] = {
     "packetstorm":      1.7,
     "securityweek":     1.5,
     "troyhunt":         1.6,
-    # government — very high signal
+    # government
     "cisa":             2.0,
     "cisa_ics":         2.0,
     "nist_nvd":         1.9,
@@ -87,63 +104,173 @@ SOURCE_WEIGHTS: dict[str, float] = {
     "enisa":            1.5,
     "fbi":              1.8,
     "austracyber":      1.4,
-    # tech — medium signal
+    # geopolitics / politics — high signal
+    "foreignaffairs":   1.9,
+    "foreignpolicy":    1.8,
+    "bellingcat":       1.9,
+    "understandingwar": 1.9,
+    "kyivindependent":  1.7,
+    "meduza":           1.7,
+    "crisisgroup":      1.8,
+    "cfr":              1.8,
+    "rand":             1.7,
+    "chathamhouse":     1.8,
+    "sipri":            1.7,
+    "iiss":             1.7,
+    "stimson":          1.6,
+    "intercepted":      1.5,
+    "scmp":             1.6,
+    "thediplomat":      1.6,
+    "nikkei":           1.5,
+    "asiatimes":        1.4,
+    "middleeasteye":    1.5,
+    "haaretz":          1.5,
+    "rferl":            1.6,
+    "aljazeera":        1.4,
+    "kyivindependent":  1.7,
+    "dw_news":          1.4,
+    "france24":         1.4,
+    "euractiv":         1.6,
+    "politico":         1.6,
+    "politico_eu":      1.6,
+    "thehill":          1.4,
+    "pbs_newshour":     1.4,
+    "axios":            1.5,
+    "brookings":        1.7,
+    # finance / economics — high signal
+    "economist":        1.9,
+    "ft":               1.8,
+    "ft_markets":       1.8,
+    "ft_world":         1.8,
+    "ft_economy":       1.8,
+    "wsj_markets":      1.8,
+    "wsj_economy":      1.8,
+    "federalreserve":   1.9,
+    "ecb":              1.8,
+    "imf_blog":         1.8,
+    "bis":              1.7,
+    "nber":             1.7,
+    "worldbank":        1.6,
+    "project_syndicate":1.7,
+    "marketwatch":      1.5,
+    "cnbc":             1.4,
+    "reuters_finance":  1.6,
+    "vox_econ":         1.6,
+    # tech — medium
     "arstechnica":      1.3,
     "theregister":      1.3,
     "wired":            1.2,
     "zdnet":            1.1,
     "techcrunch":       1.0,
     "hackernews_yc":    1.1,
-    "technologyreview": 1.2,
+    "technologyreview": 1.3,
     "verge":            0.9,
-    # mainstream — lower signal for infosec
-    "reuters":          1.0,
-    "bbc":              0.9,
-    "guardian":         0.9,
-    "ap":               0.9,
-    "nyttech":          0.8,
-    "wapotech":         0.8,
-    "ft":               0.8,
+    # mainstream — baseline
+    "reuters":          1.4,
+    "bbc":              1.3,
+    "guardian":         1.3,
+    "ap":               1.3,
+    "nyttech":          1.2,
+    "wapotech":         1.2,
+    "chathamhouse":     1.8,
 }
 
 # ── Keyword scoring tiers ─────────────────────────────────────────────────────
 
 KEYWORDS_CRITICAL = [
+    # infosec
     "zero-day", "0day", "rce", "remote code execution", "actively exploited",
-    "critical vulnerability", "emergency patch", "nation-state", "ransomware attack",
+    "critical vulnerability", "emergency patch", "ransomware attack",
     "data breach", "mass exploitation", "supply chain attack",
+    # geopolitics / war
+    "military invasion", "nuclear strike", "coup", "assassination",
+    "war declaration", "state of emergency", "martial law",
+    # economics
+    "market crash", "bank collapse", "sovereign default", "financial crisis",
+    "emergency rate cut", "hyperinflation", "stock market crash",
 ]
 
 KEYWORDS_HIGH = [
+    # infosec
     "vulnerability", "exploit", "malware", "backdoor", "apt", "breach",
-    "ransomware", "phishing", "trojan", "botnet", "spyware", "rootkit",
-    "cve-", "patch tuesday", "zero trust", "incident response",
+    "ransomware", "phishing", "trojan", "botnet", "cve-", "zero trust",
+    # geopolitics
+    "nation-state", "sanctions", "military", "conflict", "nato", "invasion",
+    "espionage", "intelligence", "treaty", "diplomatic", "ceasefire",
+    "nuclear", "missile", "drone strike", "insurgency", "coup",
+    # economics / finance
+    "interest rate", "federal reserve", "inflation", "recession", "gdp",
+    "tariff", "trade war", "central bank", "imf", "world bank",
+    "bond yield", "currency", "deficit", "debt ceiling", "oil price",
 ]
 
 KEYWORDS_MEDIUM = [
-    "security", "attack", "threat", "advisory", "patch", "update", "hack",
-    "leaked", "exposed", "stolen", "cyber", "infosec", "pentest", "ctf",
-    "bug bounty", "disclosure", "authentication", "encryption",
+    # infosec
+    "security", "attack", "threat", "advisory", "patch", "cyber", "hack",
+    "leaked", "exposed", "stolen", "encryption", "authentication",
+    # politics
+    "election", "government", "parliament", "president", "minister",
+    "policy", "legislation", "congress", "senate", "vote", "protest",
+    "opposition", "referendum", "bilateral", "multilateral",
+    # economics
+    "market", "economy", "growth", "unemployment", "trade", "export",
+    "import", "investment", "revenue", "budget", "fiscal", "monetary",
+    "supply chain", "energy", "oil", "gas", "commodities", "stocks",
+    # general signal
+    "breaking", "exclusive", "report", "investigation", "leak", "revealed",
 ]
-
 # ── Cache ─────────────────────────────────────────────────────────────────────
 
-def _load_cache() -> list | None:
-    if not CACHE_FILE.exists():
+def _load_cache_file(path) -> list | None:
+    if not path.exists():
         return None
-    raw       = json.loads(CACHE_FILE.read_text())
+    raw       = json.loads(path.read_text())
     cached_at = datetime.fromisoformat(raw["cached_at"])
     age       = datetime.now(timezone.utc) - cached_at
     if age > timedelta(minutes=NEWS_CACHE_TTL_MINUTES):
         return None
     return raw["items"]
 
-
-def _save_cache(items: list) -> None:
-    CACHE_FILE.write_text(json.dumps({
+def _save_cache_file(path, items: list) -> None:
+    path.write_text(json.dumps({
         "cached_at": datetime.now(timezone.utc).isoformat(),
         "items":     items,
     }, indent=2))
+
+# ── Normalization (only for All view) ─────────────────────────────────────────
+
+MAX_PER_SOURCE_IN_FEED   = 8
+MAX_PER_CATEGORY_IN_FEED = {
+    "infosec":    60,
+    "tech":       40,
+    "government": 30,
+    "finance":    60,
+    "politics":   60,
+}
+
+def _normalize(items: list[dict]) -> list[dict]:
+    from collections import defaultdict
+    by_source: dict[str, list] = defaultdict(list)
+    for item in items:
+        by_source[item["source_id"]].append(item)
+
+    capped: list[dict] = []
+    for source_items in by_source.values():
+        source_items.sort(key=lambda x: x["score"], reverse=True)
+        capped.extend(source_items[:MAX_PER_SOURCE_IN_FEED])
+
+    by_category: dict[str, list] = defaultdict(list)
+    for item in capped:
+        by_category[item["category"]].append(item)
+
+    normalized: list[dict] = []
+    for cat, cat_items in by_category.items():
+        cat_items.sort(key=lambda x: x["score"], reverse=True)
+        limit = MAX_PER_CATEGORY_IN_FEED.get(cat, 60)
+        normalized.extend(cat_items[:limit])
+
+    normalized.sort(key=lambda x: x["score"], reverse=True)
+    return normalized
 
 # ── Date parsing ──────────────────────────────────────────────────────────────
 
@@ -164,6 +291,56 @@ def _parse_date(raw: str) -> str:
         except Exception:
             pass
     return raw
+
+# ── Fetch by source list ──────────────────────────────────────────────────────
+
+async def _fetch_sources(sources: list[dict]) -> list[dict]:
+    async with httpx.AsyncClient() as client:
+        tasks   = [_fetch_source(s, client) for s in sources]
+        results = await asyncio.gather(*tasks)
+    items = [item for sublist in results for item in sublist]
+    return _score_items(items)
+
+# ── Public fetch functions ────────────────────────────────────────────────────
+
+async def fetch_feed() -> dict:
+    """All sources combined, normalized."""
+    cached = _load_cache_file(CACHE_FILE)
+    if cached is not None:
+        return {"error": None, "items": cached, "from_cache": True}
+    try:
+        tech    = await _fetch_sources(NEWS_SOURCES_TECH)
+        general = await _fetch_sources(NEWS_SOURCES_GENERAL)
+        all_items = _score_items(tech + general)
+        normalized = _normalize(all_items)
+        _save_cache_file(CACHE_FILE, normalized)
+        return {"error": None, "items": normalized, "from_cache": False}
+    except Exception as e:
+        return {"error": str(e), "items": []}
+
+async def fetch_tech() -> dict:
+    """Tech + infosec only, no normalization."""
+    cached = _load_cache_file(CACHE_FILE_TECH)
+    if cached is not None:
+        return {"error": None, "items": cached, "from_cache": True}
+    try:
+        items = await _fetch_sources(NEWS_SOURCES_TECH)
+        _save_cache_file(CACHE_FILE_TECH, items)
+        return {"error": None, "items": items, "from_cache": False}
+    except Exception as e:
+        return {"error": str(e), "items": []}
+
+async def fetch_general() -> dict:
+    """Finance + politics only, no normalization."""
+    cached = _load_cache_file(CACHE_FILE_GENERAL)
+    if cached is not None:
+        return {"error": None, "items": cached, "from_cache": True}
+    try:
+        items = await _fetch_sources(NEWS_SOURCES_GENERAL)
+        _save_cache_file(CACHE_FILE_GENERAL, items)
+        return {"error": None, "items": items, "from_cache": False}
+    except Exception as e:
+        return {"error": str(e), "items": []}
 
 # ── Image extraction ──────────────────────────────────────────────────────────
 
@@ -227,7 +404,7 @@ def _recency_score(published_iso: str) -> float:
             pub = pub.replace(tzinfo=timezone.utc)
         age_hours = (datetime.now(timezone.utc) - pub).total_seconds() / 3600
         # exponential decay: full score <6h, half at 24h, near zero at 168h
-        return 10.0 * math.exp(-0.03 * age_hours)
+        return 10.0 * math.exp(-0.02 * age_hours)
     except Exception:
         return 0.0
     
@@ -383,26 +560,3 @@ async def _fetch_source(source: dict, client: httpx.AsyncClient) -> list[dict]:
         print(f"[news] {source['id']} error: {e}")
         return []
     
-# ── Fetch all ─────────────────────────────────────────────────────────────────
-
-async def _fetch_all() -> list[dict]:
-    async with httpx.AsyncClient() as client:
-        tasks   = [_fetch_source(s, client) for s in NEWS_SOURCES]
-        results = await asyncio.gather(*tasks)
-
-    items = [item for sublist in results for item in sublist]
-    items = _score_items(items)
-    return items
-
-# ── Public fetch ──────────────────────────────────────────────────────────────
-
-async def fetch_feed() -> dict:
-    cached = _load_cache()
-    if cached is not None:
-        return {"error": None, "items": cached, "from_cache": True}
-    try:
-        items = await _fetch_all()
-        _save_cache(items)
-        return {"error": None, "items": items, "from_cache": False}
-    except Exception as e:
-        return {"error": str(e), "items": []}

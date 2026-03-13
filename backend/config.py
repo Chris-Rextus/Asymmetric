@@ -66,64 +66,109 @@ REDDIT_MAX_POSTS_PER_SUBREDDIT = int(os.getenv("REDDIT_MAX_POSTS_PER_SUBREDDIT",
 NEWS_CACHE_TTL_MINUTES      = int(os.getenv("NEWS_CACHE_TTL_MINUTES", "20"))
 NEWS_MAX_ITEMS_PER_SOURCE   = int(os.getenv("NEWS_MAX_ITEMS_PER_SOURCE", "40"))
 
-NEWS_SOURCES = [
-
+NEWS_SOURCES_TECH: list[dict] = [
     # ── Infosec ───────────────────────────────────────────────────────────────
-    {"id": "krebs",          "name": "Krebs on Security",    "category": "infosec",     "url": "https://krebsonsecurity.com/feed/"},
-    {"id": "bleepingcomputer","name": "Bleeping Computer",   "category": "infosec",     "url": "https://www.bleepingcomputer.com/feed/"},
-    {"id": "thehackernews",  "name": "The Hacker News",      "category": "infosec",     "url": "https://feeds.feedburner.com/TheHackersNews"},
-    {"id": "darkreading",    "name": "Dark Reading",         "category": "infosec",     "url": "https://www.darkreading.com/rss.xml"},
-    {"id": "schneier",       "name": "Schneier on Security", "category": "infosec",     "url": "https://www.schneier.com/feed/atom"},
-    {"id": "recordedfuture", "name": "Recorded Future",      "category": "infosec",     "url": "https://www.recordedfuture.com/feed"},
-    {"id": "threatpost",     "name": "Threatpost",           "category": "infosec",     "url": "https://threatpost.com/feed/"},
-
+    {"id": "krebs",          "name": "Krebs on Security",   "category": "infosec",  "url": "https://krebsonsecurity.com/feed/"},
+    {"id": "bleepingcomputer","name": "BleepingComputer",   "category": "infosec",  "url": "https://www.bleepingcomputer.com/feed/"},
+    {"id": "thehackernews",  "name": "The Hacker News",     "category": "infosec",  "url": "https://feeds.feedburner.com/TheHackersNews"},
+    {"id": "darkreading",    "name": "Dark Reading",        "category": "infosec",  "url": "https://www.darkreading.com/rss.xml"},
+    {"id": "schneier",       "name": "Schneier on Security","category": "infosec",  "url": "https://www.schneier.com/feed/atom"},
+    {"id": "recordedfuture", "name": "Recorded Future",    "category": "infosec",  "url": "https://www.recordedfuture.com/feed"},
+    {"id": "threatpost",     "name": "Threatpost",          "category": "infosec",  "url": "https://threatpost.com/feed/"},
+    {"id": "securityweek",   "name": "SecurityWeek",        "category": "infosec",  "url": "https://feeds.feedburner.com/securityweek"},
+    {"id": "troyhunt",       "name": "Troy Hunt",           "category": "infosec",  "url": "https://www.troyhunt.com/rss/"},
+    {"id": "malwarebytes",   "name": "Malwarebytes Labs",   "category": "infosec",  "url": "https://www.malwarebytes.com/blog/feed/"},
+    {"id": "sophos",         "name": "Sophos News",         "category": "infosec",  "url": "https://news.sophos.com/en-us/feed/"},
+    {"id": "crowdstrike",    "name": "CrowdStrike Blog",    "category": "infosec",  "url": "https://www.crowdstrike.com/blog/feed/"},
+    {"id": "sentinelone",    "name": "SentinelOne",         "category": "infosec",  "url": "https://www.sentinelone.com/blog/feed/"},
+    {"id": "checkpointres",  "name": "Check Point Research","category": "infosec",  "url": "https://research.checkpoint.com/feed/"},
+    {"id": "unit42",         "name": "Palo Alto Unit 42",   "category": "infosec",  "url": "https://unit42.paloaltonetworks.com/feed/"},
+    {"id": "googleprojectzero","name":"Google Project Zero","category": "infosec",  "url": "https://googleprojectzero.blogspot.com/feeds/posts/default"},
+    {"id": "mandiant",       "name": "Mandiant Blog",       "category": "infosec",  "url": "https://www.mandiant.com/resources/blog/rss.xml"},
+    {"id": "exploitdb",      "name": "Exploit-DB",          "category": "infosec",  "url": "https://www.exploit-db.com/rss.xml"},
+    {"id": "packetstorm",    "name": "Packet Storm",        "category": "infosec",  "url": "https://packetstormsecurity.com/rss.xml"},
+    {"id": "Graham Cluley",  "name": "Graham Cluley",       "category": "infosec",  "url": "https://grahamcluley.com/feed/"},
+    # ── Government / CERT ────────────────────────────────────────────────────
+    {"id": "cisa",           "name": "CISA",                "category": "government","url": "https://www.cisa.gov/cybersecurity-advisories/all.xml"},
+    {"id": "cisa_ics",       "name": "CISA ICS",            "category": "government","url": "https://www.cisa.gov/cybersecurity-advisories/ics-advisories.xml"},
+    {"id": "nist_nvd",       "name": "NIST NVD",            "category": "government","url": "https://nvd.nist.gov/feeds/xml/cve/misc/nvd-rss.xml"},
+    {"id": "msrc",           "name": "Microsoft MSRC",      "category": "government","url": "https://msrc.microsoft.com/blog/feed"},
+    {"id": "ncsc",           "name": "NCSC UK",             "category": "government","url": "https://www.ncsc.gov.uk/api/1/services/v1/report-rss-feed.xml"},
+    {"id": "enisa",          "name": "ENISA",               "category": "government","url": "https://www.enisa.europa.eu/news/enisa-news/RSS"},
+    {"id": "austracyber",    "name": "ASD ACSC",            "category": "government","url": "https://www.cyber.gov.au/about-us/news/rss"},
     # ── Tech ─────────────────────────────────────────────────────────────────
-    {"id": "wired",          "name": "Wired",                "category": "tech",        "url": "https://www.wired.com/feed/rss"},
-    {"id": "arstechnica",    "name": "Ars Technica",         "category": "tech",        "url": "https://feeds.arstechnica.com/arstechnica/index"},
-    {"id": "theregister",    "name": "The Register",         "category": "tech",        "url": "https://www.theregister.com/headlines.atom"},
-    {"id": "zdnet",          "name": "ZDNet",                "category": "tech",        "url": "https://www.zdnet.com/news/rss.xml"},
-
-    # ── Mainstream ────────────────────────────────────────────────────────────
-    {"id": "reuters",        "name": "Reuters Tech",         "category": "mainstream",  "url": "https://feeds.reuters.com/reuters/technology"},
-    {"id": "bbc",            "name": "BBC Technology",       "category": "mainstream",  "url": "https://feeds.bbci.co.uk/news/technology/rss.xml"},
-    {"id": "guardian",       "name": "The Guardian Tech",    "category": "mainstream",  "url": "https://www.theguardian.com/technology/rss"},
-    {"id": "ap",             "name": "AP Technology",        "category": "mainstream",  "url": "https://rsshub.app/apnews/topics/technology"},
-
-    # ── Government ───────────────────────────────────────────────────────────
-    {"id": "cisa",           "name": "CISA Advisories",      "category": "government",  "url": "https://www.cisa.gov/cybersecurity-advisories/all.xml"},
-    {"id": "ncsc",           "name": "NCSC UK",              "category": "government",  "url": "https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml"},
-    {"id": "msrc",           "name": "Microsoft MSRC",       "category": "government",  "url": "https://api.msrc.microsoft.com/update-guide/rss"},
-    {"id": "enisa",          "name": "ENISA",                "category": "government",  "url": "https://www.enisa.europa.eu/news/enisa-news/RSS"},
-
-    # ── Infosec (extra) ───────────────────────────────────────────────────────
-    {"id": "securityweek",   "name": "SecurityWeek",        "category": "infosec",     "url": "https://feeds.feedburner.com/securityweek"},
-    {"id": "Graham Cluley",  "name": "Graham Cluley",       "category": "infosec",     "url": "https://grahamcluley.com/feed/"},
-    {"id": "troyhunt",       "name": "Troy Hunt",           "category": "infosec",     "url": "https://www.troyhunt.com/rss/"},
-    {"id": "malwarebytes",   "name": "Malwarebytes Labs",   "category": "infosec",     "url": "https://www.malwarebytes.com/blog/feed/"},
-    {"id": "crowdstrike",    "name": "CrowdStrike Blog",    "category": "infosec",     "url": "https://www.crowdstrike.com/blog/feed/"},
-    {"id": "sentinelone",    "name": "SentinelOne",         "category": "infosec",     "url": "https://www.sentinelone.com/blog/feed/"},
-    {"id": "checkpointres",  "name": "Check Point Research","category": "infosec",     "url": "https://research.checkpoint.com/feed/"},
-    {"id": "unit42",         "name": "Palo Alto Unit 42",   "category": "infosec",     "url": "https://unit42.paloaltonetworks.com/feed/"},
-    {"id": "googleprojectzero","name": "Google Project Zero","category": "infosec",    "url": "https://googleprojectzero.blogspot.com/feeds/posts/default"},
-    {"id": "mandiant",       "name": "Mandiant Blog",       "category": "infosec",     "url": "https://www.mandiant.com/resources/blog/rss.xml"},
-    {"id": "exploitdb",      "name": "Exploit-DB",          "category": "infosec",     "url": "https://www.exploit-db.com/rss.xml"},
-    {"id": "packetstorm",    "name": "Packet Storm",        "category": "infosec",     "url": "https://packetstormsecurity.com/rss.xml"},
-
-    # ── Tech (extra) ──────────────────────────────────────────────────────────
-    {"id": "techcrunch",     "name": "TechCrunch",          "category": "tech",        "url": "https://techcrunch.com/feed/"},
-    {"id": "hackernews_yc",  "name": "Hacker News (YC)",    "category": "tech",        "url": "https://news.ycombinator.com/rss"},
-    {"id": "technologyreview","name": "MIT Tech Review",    "category": "tech",        "url": "https://www.technologyreview.com/feed/"},
-    {"id": "verge",          "name": "The Verge",           "category": "tech",        "url": "https://www.theverge.com/rss/index.xml"},
-
-    # ── Mainstream (extra) ────────────────────────────────────────────────────
-    {"id": "nyttech",        "name": "NYT Technology",      "category": "mainstream",  "url": "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml"},
-    {"id": "wapotech",       "name": "Washington Post Tech","category": "mainstream",  "url": "https://feeds.washingtonpost.com/rss/business/technology"},
-    {"id": "ft",             "name": "Financial Times Tech","category": "mainstream",  "url": "https://www.ft.com/technology?format=rss"},
-
-    # ── Government (extra) ───────────────────────────────────────────────────
-    {"id": "nist_nvd",       "name": "NIST NVD",            "category": "government",  "url": "https://nvd.nist.gov/feeds/xml/cve/misc/nvd-rss.xml"},
-    {"id": "cisa_ics",       "name": "CISA ICS Advisories", "category": "government",  "url": "https://www.cisa.gov/cybersecurity-advisories/ics-advisories.xml"},
+    {"id": "wired",          "name": "Wired",               "category": "tech",     "url": "https://www.wired.com/feed/rss"},
+    {"id": "arstechnica",    "name": "Ars Technica",        "category": "tech",     "url": "https://feeds.arstechnica.com/arstechnica/index"},
+    {"id": "theregister",    "name": "The Register",        "category": "tech",     "url": "https://www.theregister.com/headlines.atom"},
+    {"id": "zdnet",          "name": "ZDNet",               "category": "tech",     "url": "https://www.zdnet.com/news/rss.xml"},
+    {"id": "techcrunch",     "name": "TechCrunch",          "category": "tech",     "url": "https://techcrunch.com/feed/"},
+    {"id": "hackernews_yc",  "name": "Hacker News (YC)",    "category": "tech",     "url": "https://news.ycombinator.com/rss"},
+    {"id": "technologyreview","name":"MIT Tech Review",     "category": "tech",     "url": "https://www.technologyreview.com/feed/"},
+    {"id": "verge",          "name": "The Verge",           "category": "tech",     "url": "https://www.theverge.com/rss/index.xml"},
 ]
+
+NEWS_SOURCES_GENERAL: list[dict] = [
+    # ── Finance / Economics ───────────────────────────────────────────────────
+    {"id": "ft",             "name": "Financial Times",     "category": "finance",  "url": "https://www.ft.com/technology?format=rss"},
+    {"id": "ft_markets",     "name": "FT Markets",          "category": "finance",  "url": "https://www.ft.com/markets?format=rss"},
+    {"id": "ft_economy",     "name": "FT Economy",          "category": "finance",  "url": "https://www.ft.com/economics?format=rss"},
+    {"id": "ft_world",       "name": "FT World",            "category": "finance",  "url": "https://www.ft.com/world?format=rss"},
+    {"id": "economist",      "name": "The Economist",       "category": "finance",  "url": "https://www.economist.com/finance-and-economics/rss.xml"},
+    {"id": "wsj_markets",    "name": "WSJ Markets",         "category": "finance",  "url": "https://feeds.a.dj.com/rss/RSSMarketsMain.xml"},
+    {"id": "wsj_economy",    "name": "WSJ Economy",         "category": "finance",  "url": "https://feeds.a.dj.com/rss/RSSWorldNews.xml"},
+    {"id": "marketwatch",    "name": "MarketWatch",         "category": "finance",  "url": "https://feeds.marketwatch.com/marketwatch/topstories/"},
+    {"id": "cnbc",           "name": "CNBC",                "category": "finance",  "url": "https://www.cnbc.com/id/100003114/device/rss/rss.html"},
+    {"id": "reuters_finance","name": "Reuters Finance",     "category": "finance",  "url": "https://feeds.reuters.com/reuters/businessNews"},
+    {"id": "bloomberg_tech", "name": "Bloomberg Tech",      "category": "finance",  "url": "https://feeds.bloomberg.com/technology/news.rss"},
+    {"id": "federalreserve", "name": "Federal Reserve",     "category": "finance",  "url": "https://www.federalreserve.gov/feeds/press_all.xml"},
+    {"id": "ecb",            "name": "ECB",                 "category": "finance",  "url": "https://www.ecb.europa.eu/rss/press.html"},
+    {"id": "imf_blog",       "name": "IMF Blog",            "category": "finance",  "url": "https://www.imf.org/en/News/rss?language=eng"},
+    {"id": "bis",            "name": "BIS Research",        "category": "finance",  "url": "https://www.bis.org/rss/research.rss"},
+    {"id": "worldbank",      "name": "World Bank",          "category": "finance",  "url": "https://blogs.worldbank.org/feed"},
+    {"id": "nber",           "name": "NBER",                "category": "finance",  "url": "https://www.nber.org/rss/new_research_feed.xml"},
+    {"id": "project_syndicate","name":"Project Syndicate",  "category": "finance",  "url": "https://www.project-syndicate.org/rss"},
+    {"id": "vox_econ",       "name": "Vox EU",              "category": "finance",  "url": "https://cepr.org/rss.xml"},
+    # ── Politics / Geopolitics ────────────────────────────────────────────────
+    {"id": "reuters",        "name": "Reuters",             "category": "politics", "url": "https://feeds.reuters.com/reuters/technology"},
+    {"id": "bbc",            "name": "BBC News",            "category": "politics", "url": "https://feeds.bbci.co.uk/news/rss.xml"},
+    {"id": "guardian",       "name": "The Guardian",        "category": "politics", "url": "https://www.theguardian.com/world/rss"},
+    {"id": "ap",             "name": "AP News",             "category": "politics", "url": "https://rsshub.app/apnews/topics/technology"},
+    {"id": "aljazeera",      "name": "Al Jazeera",          "category": "politics", "url": "https://www.aljazeera.com/xml/rss/all.xml"},
+    {"id": "dw_news",        "name": "DW News",             "category": "politics", "url": "https://rss.dw.com/rdf/rss-en-all"},
+    {"id": "france24",       "name": "France 24",           "category": "politics", "url": "https://www.france24.com/en/rss"},
+    {"id": "politico",       "name": "Politico",            "category": "politics", "url": "https://www.politico.com/rss/politicopicks.xml"},
+    {"id": "politico_eu",    "name": "Politico EU",         "category": "politics", "url": "https://www.politico.eu/feed/"},
+    {"id": "thehill",        "name": "The Hill",            "category": "politics", "url": "https://thehill.com/feed/"},
+    {"id": "axios",          "name": "Axios",               "category": "politics", "url": "https://api.axios.com/feed/"},
+    {"id": "pbs_newshour",   "name": "PBS NewsHour",        "category": "politics", "url": "https://www.pbs.org/newshour/feeds/rss/headlines"},
+    {"id": "rferl",          "name": "Radio Free Europe",   "category": "politics", "url": "https://www.rferl.org/api/zpqoyu$vusr"},
+    {"id": "euractiv",       "name": "Euractiv",            "category": "politics", "url": "https://www.euractiv.com/feed/"},
+    {"id": "foreignaffairs", "name": "Foreign Affairs",     "category": "politics", "url": "https://www.foreignaffairs.com/rss.xml"},
+    {"id": "foreignpolicy",  "name": "Foreign Policy",      "category": "politics", "url": "https://foreignpolicy.com/feed/"},
+    {"id": "cfr",            "name": "CFR",                 "category": "politics", "url": "https://www.cfr.org/rss/all"},
+    {"id": "brookings",      "name": "Brookings",           "category": "politics", "url": "https://www.brookings.edu/feed/"},
+    {"id": "rand",           "name": "RAND Corp",           "category": "politics", "url": "https://www.rand.org/news/press.rss"},
+    {"id": "chathamhouse",   "name": "Chatham House",       "category": "politics", "url": "https://www.chathamhouse.org/rss.xml"},
+    {"id": "crisisgroup",    "name": "Crisis Group",        "category": "politics", "url": "https://www.crisisgroup.org/rss"},
+    {"id": "sipri",          "name": "SIPRI",               "category": "politics", "url": "https://www.sipri.org/rss.xml"},
+    {"id": "iiss",           "name": "IISS",                "category": "politics", "url": "https://www.iiss.org/rss"},
+    {"id": "understandingwar","name":"Inst. Study of War",  "category": "politics", "url": "https://www.understandingwar.org/rss.xml"},
+    {"id": "bellingcat",     "name": "Bellingcat",          "category": "politics", "url": "https://www.bellingcat.com/feed/"},
+    {"id": "intercepted",    "name": "The Intercept",       "category": "politics", "url": "https://theintercept.com/feed/?rss"},
+    {"id": "kyivindependent","name": "Kyiv Independent",    "category": "politics", "url": "https://kyivindependent.com/feed/"},
+    {"id": "meduza",         "name": "Meduza",              "category": "politics", "url": "https://meduza.io/rss/en/all"},
+    {"id": "scmp",           "name": "South China Morning Post","category":"politics","url": "https://www.scmp.com/rss/91/feed"},
+    {"id": "nikkei",         "name": "Nikkei Asia",         "category": "politics", "url": "https://asia.nikkei.com/rss/feed/nar"},
+    {"id": "thediplomat",    "name": "The Diplomat",        "category": "politics", "url": "https://thediplomat.com/feed/"},
+    {"id": "asiatimes",      "name": "Asia Times",          "category": "politics", "url": "https://asiatimes.com/feed/"},
+    {"id": "middleeasteye",  "name": "Middle East Eye",     "category": "politics", "url": "https://www.middleeasteye.net/rss"},
+    {"id": "haaretz",        "name": "Haaretz",             "category": "politics", "url": "https://www.haaretz.com/srv/haaretz-articles.rss"},
+    {"id": "stimson",        "name": "Stimson Center",      "category": "politics", "url": "https://www.stimson.org/feed/"},
+    {"id": "nyttech",        "name": "NYT Technology",      "category": "politics", "url": "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml"},
+    {"id": "wapotech",       "name": "Washington Post",     "category": "politics", "url": "https://feeds.washingtonpost.com/rss/business/technology"},
+]
+
+NEWS_SOURCES = NEWS_SOURCES_TECH + NEWS_SOURCES_GENERAL
 
 # ── Server ────────────────────────────────────────────────────────────────────
 

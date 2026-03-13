@@ -65,29 +65,43 @@ async def get_feed(platform: str = Query(default="all")):
 
 @app.get("/api/news")
 async def get_news(category: str = Query(default="all")):
-
     result = await news.fetch_feed()
     items  = result["items"]
-
     if category != "all":
         items = [i for i in items if i["category"] == category]
-        
-    return {
-        "items":      items,
-        "error":      result.get("error"),
-        "from_cache": result.get("from_cache"),
-    }
+    return {"items": items, "error": result.get("error"), "from_cache": result.get("from_cache")}
 
+@app.get("/api/news/tech")
+async def get_news_tech(category: str = Query(default="all")):
+    result = await news.fetch_tech()
+    items  = result["items"]
+    if category != "all":
+        items = [i for i in items if i["category"] == category]
+    return {"items": items, "error": result.get("error"), "from_cache": result.get("from_cache")}
+
+@app.get("/api/news/general")
+async def get_news_general(category: str = Query(default="all")):
+    result = await news.fetch_general()
+    items  = result["items"]
+    if category != "all":
+        items = [i for i in items if i["category"] == category]
+    return {"items": items, "error": result.get("error"), "from_cache": result.get("from_cache")}
 
 @app.delete("/api/news/cache")
 def clear_news_cache():
+    for f in [news.CACHE_FILE, news.CACHE_FILE_TECH, news.CACHE_FILE_GENERAL]:
+        if f.exists(): f.unlink()
+    return {"cleared": ["news_cache.json", "news_cache_tech.json", "news_cache_general.json"]}
 
-    cache_file = DATA_DIR / "news_cache.json"
+@app.delete("/api/news/tech/cache")
+def clear_news_tech_cache():
+    if news.CACHE_FILE_TECH.exists(): news.CACHE_FILE_TECH.unlink()
+    return {"cleared": ["news_cache_tech.json"]}
 
-    if cache_file.exists():
-        cache_file.unlink()
-
-    return {"cleared": ["news_cache.json"]}
+@app.delete("/api/news/general/cache")
+def clear_news_general_cache():
+    if news.CACHE_FILE_GENERAL.exists(): news.CACHE_FILE_GENERAL.unlink()
+    return {"cleared": ["news_cache_general.json"]}
 
 # ── Telegram Channels ─────────────────────────────────────────────────────────
 

@@ -266,13 +266,15 @@ export default function FeedScreen() {
       <NavBar active={activeSection} onSelect={setActiveSection} />
 
       {/* ── TOOLBAR ── */}
-      <Toolbar
-        filters={filters}
-        onChange={p => setFilters(f => ({ ...f, ...p }))}
-        onRefresh={refresh}
-        loading={loading}
-        counts={counts}
-      />
+      {activeSection === 'social_media' && (
+        <Toolbar
+          filters={filters}
+          onChange={p => setFilters(f => ({ ...f, ...p }))}
+          onRefresh={refresh}
+          loading={loading}
+          counts={counts}
+        />
+      )}
 
       {/* ── MAIN LAYOUT ── */}
       {activeSection === 'social_media' ? (
@@ -377,7 +379,7 @@ export default function FeedScreen() {
           </div>
         </>
       ) : activeSection === 'mainstream_media' ? (
-        <div className="flex flex-1 overflow-hidden">``
+        <div className="flex flex-1 overflow-hidden">
           <NewsPanel />
         </div>
       ) : (

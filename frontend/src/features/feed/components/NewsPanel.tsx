@@ -26,8 +26,10 @@ const CATEGORY_META: Record<string, { label: string; color: string }> = {
   all:        { label: "All",        color: "#f0a500" },
   infosec:    { label: "Infosec",    color: "#ff4444" },
   tech:       { label: "Tech",       color: "#29b6f6" },
-  mainstream: { label: "Mainstream", color: "#f0a500" },
   government: { label: "Government", color: "var(--accent-green)" },
+  mainstream: { label: "Mainstream", color: "#f0a500" },
+  finance:    { label: "Finance",    color: "#26c6da" },
+  politics:   { label: "Politics",   color: "#ab47bc" },
 }
 
 const TOPIC_META: Record<string, { label: string; color: string }> = {
@@ -47,6 +49,22 @@ const TOPIC_META: Record<string, { label: string; color: string }> = {
   mobile:         { label: "Mobile",         color: "#29b6f6" },
   supply_chain:   { label: "Supply Chain",   color: "#ffa726" },
   regulation:     { label: "Regulation",     color: "var(--accent-green)" },
+  usa:           { label: "USA",          color: "#29b6f6" },
+  china:         { label: "China",        color: "#ff4444" },
+  russia:        { label: "Russia",       color: "#ffa726" },
+  europe:        { label: "Europe",       color: "#26c6da" },
+  middleeast:    { label: "Middle East",  color: "#f0a500" },
+  nuclear:       { label: "Nuclear",      color: "#ff5252" },
+}
+
+const CATEGORY_TOPICS: Record<string, string[]> = {
+  all:        Object.keys(TOPIC_META),
+  infosec:    ["ransomware", "vulnerability", "breach", "malware", "apt", "phishing", "critical_infra", "cloud", "ai_security", "exploit", "mobile", "supply_chain"],
+  tech:       ["ai_security", "cloud", "mobile", "privacy", "crypto", "supply_chain", "regulation"],
+  mainstream: ["usa", "china", "russia", "europe", "middleeast", "geopolitics", "war", "nuclear", "elections", "privacy", "regulation"],
+  government: ["critical_infra", "regulation", "sanctions", "nuclear", "usa", "china", "russia", "europe", "war"],
+  finance:    ["inflation", "central_banks", "trade", "sanctions", "crypto", "regulation", "usa", "china", "europe", "energy"],
+  politics:   ["usa", "china", "russia", "europe", "middleeast", "geopolitics", "war", "nuclear", "elections", "sanctions", "energy"],
 }
 
 const SOURCE_INITIALS: Record<string, string> = {
@@ -71,6 +89,16 @@ const SOURCE_INITIALS: Record<string, string> = {
   wapotech:        "WPO",  ft:               "FT",
   nist_nvd:        "NVD",  cisa_ics:         "ICS",
   fbi:             "FBI",  austracyber:      "ASD",
+  reuters_finance: "REF", cnbc:          "CNBC", ft_world:     "FTW",
+  project_syndicate:"PS", vox_econ:      "VOX",  nber:         "NBER",
+  worldbank:       "WB",  ecb:           "ECB",  axios:        "AXS",
+  pbs_newshour:    "PBS", aljazeera:     "AJZ",  dw_news:      "DW",
+  france24:        "F24", rferl:         "RFE",  euractiv:     "EUR",
+  chathamhouse:    "CH",  stimson:       "STM",  crisisgroup:  "CG",
+  sipri:           "SIP", iiss:          "IISS", understandingwar:"ISW",
+  kyivindependent: "KYV", meduza:        "MDZ",  scmp:         "SCMP",
+  nikkei:          "NKK", thediplomat:   "DIP",  asiatimes:    "AT",
+  middleeasteye:   "MEE", haaretz:       "HAR",
   "Graham Cluley": "GC",
 }
 
@@ -399,10 +427,13 @@ function FilterPill({ label, color, active, count, onClick }: {
 // ── Toolbar ───────────────────────────────────────────────────────────────────
 
 function NewsToolbar({
+  feed, onFeed,
   category, onCategory, topic, onTopic,
   search, onSearch, onRefresh, onClearCache,
   loading, categoryCounts, topicCounts,
 }: {
+  feed:           "all" | "tech" | "general"
+  onFeed:         (f: "all" | "tech" | "general") => void
   category:       string
   onCategory:     (c: string) => void
   topic:          string
@@ -415,25 +446,63 @@ function NewsToolbar({
   categoryCounts: Record<string, number>
   topicCounts:    Record<string, number>
 }) {
+  const FEED_META = {
+    all:     { label: "⊕ All",              color: "#f0a500" },
+    tech:    { label: "⌨ Tech & Infosec",   color: "#29b6f6" },
+    general: { label: "◉ Finance & Politics", color: "#ab47bc" },
+  }
+
   return (
     <div className="flex flex-col flex-shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
 
-      {/* row 1: category + actions */}
+      {/* row 0: feed toggle */}
+      <div className="flex flex-shrink-0" style={{ background: "var(--bg)", borderBottom: "1px solid var(--border)" }}>
+        {(["all", "tech", "general"] as const).map(f => {
+          const meta   = FEED_META[f]
+          const active = feed === f
+          return (
+            <button
+              key={f}
+              onClick={() => onFeed(f)}
+              className="flex-1 py-2 text-[10px] uppercase tracking-widest transition-all duration-150"
+              style={{
+                fontFamily:   "JetBrains Mono, monospace",
+                background:   active ? `${meta.color}15` : "transparent",
+                color:        active ? meta.color : "var(--muted)",
+                border:       "none",
+                borderBottom: active ? `2px solid ${meta.color}` : "2px solid transparent",
+                cursor:       "pointer",
+              }}
+            >
+              {meta.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* row 1: actions + optional category pills */}
       <div
         className="flex items-center gap-1.5 px-4 py-2 overflow-x-auto"
         style={{ background: "var(--bg2)", scrollbarWidth: "none" }}
       >
-        {Object.entries(CATEGORY_META).map(([id, { label, color }]) => (
-          <FilterPill
-            key={id} label={label} color={color}
-            active={category === id}
-            count={categoryCounts[id] ?? 0}
-            onClick={() => onCategory(id)}
-          />
-        ))}
+        {/* category pills — only when a specific feed is selected */}
+        {feed !== "all" && Object.entries(CATEGORY_META)
+          .filter(([id]) => {
+            if (feed === "tech")    return ["infosec", "tech", "government"].includes(id)
+            if (feed === "general") return ["finance", "politics", "mainstream"].includes(id)
+            return false
+          })
+          .map(([id, { label, color }]) => (
+            <FilterPill
+              key={id} label={label} color={color}
+              active={category === id}
+              count={categoryCounts[id] ?? 0}
+              onClick={() => onCategory(id)}
+            />
+          ))}
 
-        <div className="ml-auto flex items-center gap-2 flex-shrink-0 pl-3"
-          style={{ borderLeft: "1px solid var(--border)" }}
+        <div className={`flex items-center gap-2 flex-shrink-0 ${feed !== "all" ? "ml-auto pl-3" : ""}`}
+          style={feed !== "all" ? { borderLeft: "1px solid var(--border)" } : {}}
         >
           <button onClick={onRefresh} disabled={loading}
             className="text-[10px] uppercase tracking-widest px-3 py-1 transition-all"
@@ -465,27 +534,28 @@ function NewsToolbar({
         </div>
       </div>
 
-      {/* row 2: topic pills */}
-      <div
-        className="flex items-center gap-1 px-4 py-1.5 overflow-x-auto"
-        style={{ background: "var(--bg)", borderTop: "1px solid var(--border)", scrollbarWidth: "none" }}
-      >
-        <FilterPill
-          label="All Topics" color="#f0a500"
-          active={topic === "all"} count={0}
-          onClick={() => onTopic("all")}
-        />
-        {Object.entries(TOPIC_META).map(([id, { label, color }]) => (
-          <FilterPill
-            key={id} label={label} color={color}
-            active={topic === id}
-            count={topicCounts[id] ?? 0}
-            onClick={() => onTopic(id)}
-          />
-        ))}
-      </div>
+      {/* row 2: topic pills — only when a category is selected */}
+      {category !== "all" && (
+        <div
+          className="flex items-center gap-1 px-4 py-1.5 overflow-x-auto"
+          style={{ background: "var(--bg)", borderTop: "1px solid var(--border)", scrollbarWidth: "none" }}
+        >
+          {(CATEGORY_TOPICS[category] ?? []).map(id => {
+            const tm = TOPIC_META[id]
+            if (!tm) return null
+            return (
+              <FilterPill
+                key={id} label={tm.label} color={tm.color}
+                active={topic === id}
+                count={topicCounts[id] ?? 0}
+                onClick={() => onTopic(topic === id ? "all" : id)}
+              />
+            )
+          })}
+        </div>
+      )}
 
-      {/* row 3: search */}
+      {/* row 2: search */}
       <div
         className="flex items-center gap-3 px-4 py-2"
         style={{ background: "var(--bg2)", borderTop: "1px solid var(--border)" }}
@@ -522,18 +592,22 @@ function NewsToolbar({
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export default function NewsPanel() {
-  const [items,   setItems]   = useState<NewsItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState<string | null>(null)
+  const [items,    setItems]    = useState<NewsItem[]>([])
+  const [loading,  setLoading]  = useState(true)
+  const [error,    setError]    = useState<string | null>(null)
+  const [feed,     setFeed]     = useState<"all" | "tech" | "general">("all")
   const [category, setCategory] = useState("all")
   const [topic,    setTopic]    = useState("all")
   const [search,   setSearch]   = useState("")
 
-  const fetchNews = async () => {
+  const fetchNews = async (currentFeed = feed) => {
     setLoading(true)
     setError(null)
     try {
-      const r = await fetch("/api/news")
+      const endpoint = currentFeed === "tech"    ? "/api/news/tech"
+                     : currentFeed === "general" ? "/api/news/general"
+                     : "/api/news"
+      const r = await fetch(endpoint)
       const d = await r.json()
       if (d.error) setError(d.error)
       else setItems(d.items ?? [])
@@ -545,8 +619,34 @@ export default function NewsPanel() {
   }
 
   const clearCache = async () => {
-    await fetch("/api/news/cache", { method: "DELETE" })
+    const endpoint = feed === "tech"    ? "/api/news/tech/cache"
+                   : feed === "general" ? "/api/news/general/cache"
+                   : "/api/news/cache"
+    await fetch(endpoint, { method: "DELETE" })
     fetchNews()
+  }
+
+  const handleFeed = (f: "all" | "tech" | "general") => {
+    setFeed(f)
+    setCategory("all")
+    setTopic("all")
+    setSearch("")
+    fetchNews(f)
+  }
+
+  const handleCategory = (c: string) => {
+    const next = category === c ? "all" : c
+    setCategory(next)
+    setTopic("all")
+    setSearch("")
+    setItems([])
+    fetchNews(feed)
+  }
+
+  const handleTopic = (t: string) => {
+    setTopic(prev => prev === t ? "all" : t)
+    setItems([])
+    fetchNews(feed)
   }
 
   useEffect(() => { fetchNews() }, [])
@@ -593,10 +693,11 @@ export default function NewsPanel() {
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden w-full">
 
       <NewsToolbar
+        feed={feed}       onFeed={handleFeed}
         category={category}
-        onCategory={c => { setCategory(c); setTopic("all"); setSearch("") }}
+        onCategory={handleCategory}
         topic={topic}
-        onTopic={t => setTopic(prev => prev === t ? "all" : t)}
+        onTopic={handleTopic}
         search={search}       onSearch={setSearch}
         onRefresh={fetchNews} onClearCache={clearCache}
         loading={loading}
