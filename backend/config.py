@@ -27,6 +27,12 @@ CACHE_TTL_MINUTES = int(os.getenv("CACHE_TTL_MINUTES", "30"))
 
 # ── Nitter ────────────────────────────────────────────────────────────────────
 
+X_HANDLES = [
+    h.strip().lstrip('@')
+    for h in os.getenv("X_HANDLES", "").split(",")
+    if h.strip()
+]
+
 NITTER_INSTANCES = [
     "https://nitter.net",
     "https://nitter.privacydev.net",
@@ -45,6 +51,15 @@ TELEGRAM_CHANNEL_IDS = [
 ]
 TELEGRAM_MAX_MESSAGES_PER_CHANNEL = int(os.getenv("TELEGRAM_MAX_MESSAGES_PER_CHANNEL", "20"))
 TELEGRAM_CACHE_TTL_MINUTES = int(os.getenv("TELEGRAM_CACHE_TTL_MINUTES", "15"))
+
+# ── Reddit ────────────────────────────────────────────────────────────────────
+REDDIT_SUBREDDITS = [
+    s.strip()
+    for s in os.getenv("REDDIT_SUBREDDITS", "").split(",")
+    if s.strip()
+]
+REDDIT_CACHE_TTL_MINUTES = int(os.getenv("REDDIT_CACHE_TTL_MINUTES", "30"))
+REDDIT_MAX_POSTS_PER_SUBREDDIT = int(os.getenv("REDDIT_MAX_POSTS_PER_SUBREDDIT", "25"))
 
 # ── Server ────────────────────────────────────────────────────────────────────
 

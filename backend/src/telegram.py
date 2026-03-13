@@ -92,7 +92,7 @@ def _parse_html(html: str, channel_id: str, clean_id: str) -> list[dict]:
     channel_name = _strip_html(title_match.group(1)) if title_match else clean_id
 
     # channel avatar
-    avatar_match = re.search(r'<img class="tgme_page_photo_image"[^>]+src="([^"]+)"', html)
+    avatar_match = re.search(r'<i class="tgme_page_photo_image[^"]*"[^>]*><img src="([^"]+)"', html)
     avatar = avatar_match.group(1) if avatar_match else ""
 
     # each message block
@@ -196,3 +196,36 @@ async def fetch_feed() -> dict:
 
     except Exception as e:
         return {"error": str(e), "items": []}
+    
+
+# ── Channels summary ──────────────────────────────────────────────────────────
+
+def get_channels_summary(items: list[dict]) -> list[dict]:
+
+    """
+    Given the flat list of feed items, return one summary entry per channel:
+      { channel_id, name, avatar, message_count, latest_published, latest_preview }
+    Sorted by latest_published descending.
+    """
+
+    seen: dict[str, dict] = {}
+
+    for item in items:
+        cid = item["channel_id"]
+        if cid not in seen:
+            seen[cid] = {
+                "channel_id":       cid,
+                "name":             item["author"],
+                "avatar":           item["avatar"],
+                "message_count":    0,
+                "latest_published": item["published"],
+                "latest_preview":   item["description"],
+            }
+        seen[cid]["message_count"] += 1
+        if item["published"] > seen[cid]["latest_published"]:
+            seen[cid]["latest_published"] = item["published"]
+            seen[cid]["latest_preview"]   = item["description"]
+
+    result = list(seen.values())
+    result.sort(key=lambda x: x["latest_published"], reverse=True)
+    return result

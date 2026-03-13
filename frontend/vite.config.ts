@@ -5,8 +5,14 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'http://localhost:8000',
-      '/auth': 'http://localhost:8000',
+      '/api': {
+        target:       'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/auth': {
+        target:       'http://localhost:8000',
+        changeOrigin: true,
+      },
     }
   }
 })

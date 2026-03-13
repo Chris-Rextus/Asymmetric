@@ -12,6 +12,7 @@ from pathlib import Path
 import httpx
 
 from config import (
+    X_HANDLES,
     DATA_DIR,
     FOLLOWING_FILE,
     NITTER_INSTANCES,
@@ -25,41 +26,29 @@ CACHE_FILE = DATA_DIR / "x_cache.json"
 # ── Following list ────────────────────────────────────────────────────────────
 
 def load_handles() -> list[str]:
-
-    """
-    Parse handles from the X archive export file (data/following.js).
-
-    X archive format:
-        window.YTD.following.part0 = [ { "following": { "accountId": "...", "userLink": "https://twitter.com/handle" } } ]
-    """
+    
+    # prefer .env handles, fall back to following.js
+    if X_HANDLES:
+        return X_HANDLES
 
     if not FOLLOWING_FILE.exists():
         return []
-    
-    raw = FOLLOWING_FILE.read_text(encoding="utf-8")
 
-    # strip the JS variable assignment to get pure JSON
+    raw = FOLLOWING_FILE.read_text(encoding="utf-8")
     raw = re.sub(r"^window\.\w+\.\w+\.\w+\s*=\s*", "", raw.strip())
 
     try:
         data = json.loads(raw)
-    
     except json.JSONDecodeError:
         return []
-    
+
     handles = []
-
     for entry in data:
-        
-        link = (
-            entry.get("following", {})
-            .get("userLink", "")
-        )
-
+        link = entry.get("following", {}).get("userLink", "")
         if link:
             handle = link.rstrip("/").split("/")[-1]
             if handle:
-                handle.append(handle)
+                handles.append(handle)
 
     return list(dict.fromkeys(handles))
 
@@ -91,6 +80,10 @@ def _save_cache(items: list) -> None:
 
 # ── Nitter RSS ────────────────────────────────────────────────────────────────
 
+SCRAPER_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:124.0) Gecko/20100101 Firefox/124.0",
+}
+
 async def _fetch_handle(handle: str, client: httpx.AsyncClient) -> list[dict]:
 
     """Try each Nitter instance in order, return on first success."""
@@ -99,7 +92,7 @@ async def _fetch_handle(handle: str, client: httpx.AsyncClient) -> list[dict]:
 
         try:
             url = f"{instance}/{handle}/rss"
-            r = await client.get(url, timeout=NITTER_TIMEOUT, follow_redirects=True)
+            r = await client.get(url, headers=SCRAPER_HEADERS, timeout=NITTER_TIMEOUT, follow_redirects=True)
 
             if r.status_code == 200:
                 return _parse_rss(r.text, handle)
@@ -131,7 +124,7 @@ def _parse_rss(xml_text: str, handle: str) -> list[dict]:
     # avatar from <image><url>
     avatar = ""
     img = channel.find("image/url")
-    if img is None:
+    if img is not None:
         avatar = img.text or ""
 
     items = []
@@ -141,10 +134,19 @@ def _parse_rss(xml_text: str, handle: str) -> list[dict]:
         title = (item.findtext("title") or "").strip()
         link  = (item.findtext("link")  or "").strip()
         pub   = (item.findtext("pubDate") or "").strip()
-        desc  = (item.findtext("description") or "").strip() 
+
+        desc  = (item.findtext("description") or "").strip()
+
+        # extract quoted/retweet image from HTML before stripping tags
+        quote_img_match = re.search(r'<img src="([^"]+)"', desc)
+        quote_img = quote_img_match.group(1).replace("&amp;", "&") if quote_img_match else ""
+
+        # extract quoted author if present (bold tag before quoted text)
+        quote_author_match = re.search(r'<b>([^<]+)</b>', desc)
+        quote_author = quote_author_match.group(1) if quote_author_match else ""
 
         # strip HTML tags from description
-        desc_clean = re.sub(r"<[^>]+>", "", desc).strip()[:280]
+        desc_clean = re.sub(r"<[^>]+>", "", desc).strip()[:500]
 
         # normalize date to ISO 8601
         try:
@@ -170,6 +172,8 @@ def _parse_rss(xml_text: str, handle: str) -> list[dict]:
             "url": canonical_url,
             "published": published,
             "description": desc_clean,
+            "quote_img":   quote_img,
+            "quote_author": quote_author,
         })
 
     return items

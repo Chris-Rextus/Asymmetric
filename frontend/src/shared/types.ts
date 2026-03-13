@@ -1,7 +1,7 @@
 // frontend/src/shared/types.ts
 
 export interface FeedItem {
-  platform: 'youtube' | 'x' | 'telegram'
+  platform: 'youtube' | 'x' | 'telegram' | 'reddit'
   id: string
   title: string
   author: string
@@ -11,6 +11,8 @@ export interface FeedItem {
   published: string
   description: string
   channel_id?: string
+  quote_img?:    string
+  quote_author?: string
 }
 
 export interface PlatformMeta {
