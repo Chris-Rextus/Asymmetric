@@ -12,6 +12,7 @@ from src import youtube
 from src import x_scraper
 from src import telegram
 from src import reddit
+from src import news
 from config import HOST, PORT, CLIENT_SECRET_FILE, FOLLOWING_FILE, DATA_DIR
 
 app = FastAPI(title="infosec-feed")
@@ -60,6 +61,33 @@ async def get_feed(platform: str = Query(default="all")):
         },
     }
 
+# ── News ──────────────────────────────────────────────────────────────────────
+
+@app.get("/api/news")
+async def get_news(category: str = Query(default="all")):
+
+    result = await news.fetch_feed()
+    items  = result["items"]
+
+    if category != "all":
+        items = [i for i in items if i["category"] == category]
+        
+    return {
+        "items":      items,
+        "error":      result.get("error"),
+        "from_cache": result.get("from_cache"),
+    }
+
+
+@app.delete("/api/news/cache")
+def clear_news_cache():
+
+    cache_file = DATA_DIR / "news_cache.json"
+
+    if cache_file.exists():
+        cache_file.unlink()
+
+    return {"cleared": ["news_cache.json"]}
 
 # ── Telegram Channels ─────────────────────────────────────────────────────────
 

@@ -127,8 +127,7 @@ function AccountRow({ handle, avatar, count, latest, onClick, index }: {
 // ── Tweet card ────────────────────────────────────────────────────────────────
 
 function TweetCard({ item, index }: { item: FeedItem; index: number }) {
-    
-  const [imgErr, setImgErr]       = useState(false)
+
   const [qImgErr, setQImgErr]     = useState(false)
   const quoteImg    = item.quote_img    ?? ""
   const quoteAuthor = item.quote_author ?? ""

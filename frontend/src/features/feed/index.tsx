@@ -8,10 +8,11 @@ import TelegramPanel from "./components/TelegramPanel";
 import RedditPanel from "./components/RedditPanel";
 import XPanel from "./components/XPanel";
 import Toolbar from "./components/Toolbar";
+import NewsPanel from "./components/NewsPanel";
 import type { FeedFilters } from "../../shared/types";
 
 type RightPanel = 'telegram' | 'x' | 'reddit'
-type ActiveSection = 'social_media' | null
+type ActiveSection = 'social_media' | 'mainstream_media' | null
 
 // ── Status dot ────────────────────────────────────────────────────────────────
 
@@ -62,19 +63,35 @@ function NavBar({ active, onSelect }: { active: ActiveSection; onSelect: (s: Act
         Social Media
       </button>
 
-      {(['Market Indexes', 'Charts', 'Mainstream Media'] as const).map(label => (
+      <button
+        onClick={() => onSelect('mainstream_media')}
+        className="flex items-center px-3 h-full text-[10px] uppercase tracking-widest transition-colors duration-150"
+        style={{
+          fontFamily:   'JetBrains Mono, monospace',
+          color:        active === 'mainstream_media' ? '#f0a500' : 'var(--muted)',
+          background:   'transparent',
+          border:       'none',
+          cursor:       'pointer',
+          borderBottom: active === 'mainstream_media' ? '2px solid #f0a500' : '2px solid transparent',
+          height:       36,
+        }}
+      >
+        News
+      </button>
+
+      {(['Market Indexes', 'Charts'] as const).map(label => (
         <button
           key={label}
           disabled
           className="flex items-center px-3 h-full text-[10px] uppercase tracking-widest"
           style={{
-            fontFamily: 'JetBrains Mono, monospace',
-            color:      'var(--muted)',
-            background: 'transparent',
-            border:     'none',
-            cursor:     'default',
-            opacity:    0.3,
-            height:     36,
+            fontFamily:   'JetBrains Mono, monospace',
+            color:        'var(--muted)',
+            background:   'transparent',
+            border:       'none',
+            cursor:       'default',
+            opacity:      0.3,
+            height:       36,
             borderBottom: '2px solid transparent',
           }}
         >
@@ -359,6 +376,10 @@ export default function FeedScreen() {
             </div>
           </div>
         </>
+      ) : activeSection === 'mainstream_media' ? (
+        <div className="flex flex-1 overflow-hidden">``
+          <NewsPanel />
+        </div>
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center gap-3">
           <span className="text-3xl opacity-10">🚧</span>
